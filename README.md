@@ -29,53 +29,53 @@ The basic Etherscan Event data structure.
 
 ```
 class EtherscanEvent:
-        address: string
-        topics: [string]
-        data: string
-        block_height: int
-        timestamp: int
-        gas_price: int
-        gas_used: int
-        logindex: int
-        txhash: string
+    address: string
+    topics: [string]
+    data: string
+    block_height: int
+    timestamp: int
+    gas_price: int
+    gas_used: int
+    logindex: int
+    txhash: string
 ```
 
 The basic Etherscan Event data structure, with additional information from the associated transaction that caused the event to be emitted. 
 
 ```
 class EnrichedEvent(EtherscanEvent):
-        address: string
-        topics: [string]
-        data: string
-        block_height: int
-        timestamp: int
-        gas_price: int
-        gas_used: int
-        logindex: int
-        txhash: string
-        from_address: string
-        to_address: string
-        tx_input: string
-        nonce: int
-        position_in_block: int
-        value: int
+    address: string
+    topics: [string]
+    data: string
+    block_height: int
+    timestamp: int
+    gas_price: int
+    gas_used: int
+    logindex: int
+    txhash: string
+    from_address: string
+    to_address: string
+    tx_input: string
+    nonce: int
+    position_in_block: int
+    value: int
 ```
 
 The basic Etherscan Transaction data structure. 
 
 ```
 class EtherscanTransaction:
-        txhash: string
-        block_height: int
-        timestamp: int
-        nonce: int
-        from_address: string
-        to_address: string
-        value: int
-        gas_price: int
-        tx_input: string
-        position_in_block: int
-        is_error: bool
+    txhash: string
+    block_height: int
+    timestamp: int
+    nonce: int
+    from_address: string
+    to_address: string
+    value: int
+    gas_price: int
+    tx_input: string
+    position_in_block: int
+    is_error: bool
 ```
 
 ## Methods
@@ -117,9 +117,9 @@ These are the supported methods:
 6. `get_all_transactions(from_address, status, to_address='', fn_signature='', from_block=0, to_block='latest', thread_count=1)`
 	
 	status is either 0,1 or 2. 
-		0: Failed
-		1: Successful
-		2: Both
+        0: Failed
+        1: Successful
+        2: Both
 
 	fn_signature is the first 10-characters of a tx's input_data 
 
