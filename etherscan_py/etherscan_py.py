@@ -56,10 +56,11 @@ def chunks(start, end, n):
 class Client:
     def __init__(self, api_key):
         self.api_key = api_key
+        self.session = requests.Session()
     
     def get(self, module, action, extra_data=""):
         url = f"http://api.etherscan.io/api?module={module}&action={action}&{extra_data}&apikey={self.api_key}"
-        r = requests.get(url)
+        r = self.session.get(url)
         if r.status_code == 200:
             res = r.json()
             # Requests that are proxied to the JSON-RPC have different structure
