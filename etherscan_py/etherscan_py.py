@@ -98,7 +98,17 @@ class Client:
         res = self.get("proxy", "eth_getTransactionByHash", extra_data)
         return res
 
-    def threaded_search(self, fn_name, address, from_block=0, to_block='latest', thread_count=1, **kwargs):    
+    def get_all_events(self, address, topic, enriched_data=False, from_block=0, to_block='latest', thread_count=1):
+        kwargs = {"topic": topic, "enriched_data": True}
+        events = self.threaded_search(self.get_events, address, from_block, to_block, thread_count, **kwargs)
+        return events
+
+    def get_all_transactions(self, from_address, status, to_address="", fn_signature="", from_block=0, to_block='latest', thread_count=1):
+        kwargs = {"status": status, "fn_signature": fn_signature, "to_address": to_address}
+        txs = self.threaded_search(self.get_transactions, from_address, from_block, to_block, thread_count, **kwargs)
+        return txs
+
+    def threaded_search(self, fn_name, address, from_block, to_block, thread_count=1, **kwargs):    
         if from_block == 0:
             from_block = self.get_first_tx_block(address)
         
@@ -134,12 +144,9 @@ class Client:
         # 1 - Sucess
         # 2 - Both
         status = args['status']
-        try:
-            fn_signature = args['fn_signature']
-        except KeyError:
-            fn_signature = ""
+        fn_signature = args['fn_signature']
+        to_address = args['to_address']
 
-        
         results = copy.copy(results_copy)
         last_height = from_block
 
@@ -147,12 +154,13 @@ class Client:
         res = self.get("account", "txlist", extra_data)
 
         def add_to_results(tx):
-            if fn_signature == "":
-                results.append(EtherscanTransaction(tx))
-            else:
-                if len(tx['input']) > 10:
-                    if tx['input'][:10] == fn_signature:
-                        results.append(EtherscanTransaction(tx))
+            if to_address == "" or tx['to'] == to_address:
+                if fn_signature == "":
+                    results.append(EtherscanTransaction(tx))
+                else:
+                    if len(tx['input']) > 10:
+                        if tx['input'][:10] == fn_signature:
+                            results.append(EtherscanTransaction(tx))
 
         for tx in res:
             if status == 2:
