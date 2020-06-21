@@ -4,11 +4,8 @@
 
 from setuptools import setup, find_packages
 
-with open('README.rst') as readme_file:
+with open('README.md') as readme_file:
     readme = readme_file.read()
-
-with open('HISTORY.rst') as history_file:
-    history = history_file.read()
 
 requirements = [ ]
 
@@ -34,7 +31,7 @@ setup(
     description="Python Boilerplate contains all the boilerplate you need to create a Python package.",
     install_requires=requirements,
     license="MIT license",
-    long_description=readme + '\n\n' + history,
+    long_description=readme,
     include_package_data=True,
     keywords='etherscan_py',
     name='etherscan_py',
