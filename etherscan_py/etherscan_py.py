@@ -14,9 +14,8 @@ class EtherscanEvent:
         self.timestamp = int(event['timeStamp'], 16)
         self.gas_price = int(event['gasPrice'], 16)
         self.gas_used = int(event['gasUsed'], 16)
-        self.logindex = event['logIndex']
+        self.logindex = int(event['logIndex'], 16)
         self.txhash = event['transactionHash']
-        self.txindex = event['transactionIndex']
 
 class EnrichedEvent(EtherscanEvent):
     def __init__(self, event, transaction):
@@ -24,29 +23,24 @@ class EnrichedEvent(EtherscanEvent):
         self.from_address = transaction['from']
         self.to_address = transaction['to']
         self.tx_input = transaction['input']
-        self.nonce = transaction['nonce']
+        self.nonce = int(transaction['nonce'], 16)
         self.position_in_block = int(transaction['transactionIndex'], 16)
         self.value = int(transaction['value'], 16)
 
 class EtherscanTransaction:
-    def __init__(self, transaction):
-        self.block_height = int(transaction['blockNumber'])
-        self.timestamp = int(transaction['timeStamp'])
-        self.nonce = transaction['nonce']
-        self.from_address = transaction['from']
-        self.to_address = transaction['to']
-        self.value = int(transaction['value'])
-        self.gas_price = int(transaction['gasPrice'])
-        self.gas_used = int(transaction['gasUsed'])
-        self.tx_input = transaction['input']
-        self.position_in_block = int(transaction['transactionIndex'])
-        self.is_error = self.is_error(transaction['isError'])
-
-    def is_error(self, is_error):
-        if is_error == '0':
-            return False
-        else:
-            return True
+    def __init__(self, txhash, block_height, nonce, from_address, to_address, value, gas_price, tx_input, position_in_block, is_error, timestamp, gas_used):
+        self.txhash = txhash
+        self.block_height = block_height
+        self.nonce = nonce
+        self.from_address = from_address
+        self.to_address = to_address
+        self.value = value
+        self.gas_price = gas_price
+        self.tx_input = tx_input
+        self.position_in_block = position_in_block
+        self.is_error = is_error
+        self.timestamp = timestamp
+        self.gas_used = gas_used
 
 def chunks(start, end, n):
     l = range(start, end+1)
@@ -81,7 +75,7 @@ class Client:
 
     def get_eth_price(self):
         eth_price = self.get("stats", "ethprice")
-        return int(eth_price['ethusd'])
+        return float(eth_price['ethusd'])
 
     def get_latest_block_height(self):
         block = self.get("proxy", "eth_blockNumber")
@@ -96,10 +90,41 @@ class Client:
     def get_tx_by_hash(self, txhash):
         extra_data = f"txhash={txhash}&"
         res = self.get("proxy", "eth_getTransactionByHash", extra_data)
+        
+        extra_data_2 = f"txhash={txhash}"
+        res2 = self.get("transaction", "getstatus", extra_data_2)
+        status = res2['isError'] == '1'
+        
+        extra_data_3 = f"blockno={int(res['blockNumber'], 16)}&"
+        res3 = self.get("block", "getblockreward", extra_data_3)
+        timestamp = int(res3['timeStamp'])
+                
+        extra_data_4 = f"txhash={txhash}&"
+        res4 = self.get("proxy", "eth_getTransactionReceipt", extra_data_4)
+        gas_used = int(res4['gasUsed'], 16)
+
+        return EtherscanTransaction(
+            res['hash'],
+            int(res['blockNumber'], 16),
+            int(res['nonce'], 16),
+            res['from'],
+            res['to'],
+            int(res['value'], 16),
+            int(res['gasPrice'], 16),
+            res['input'],
+            int(res['transactionIndex'], 16),
+            status,
+            timestamp,
+            gas_used
+        )
+
+    def get_raw_tx_by_hash(self, txhash):
+        extra_data = f"txhash={txhash}&"
+        res = self.get("proxy", "eth_getTransactionByHash", extra_data)
         return res
 
     def get_all_events(self, address, topic, enriched_data=False, from_block=0, to_block='latest', thread_count=1):
-        kwargs = {"topic": topic, "enriched_data": True}
+        kwargs = {"topic": topic, "enriched_data": enriched_data}
         events = self.threaded_search(self.get_events, address, from_block, to_block, thread_count, **kwargs)
         return events
 
@@ -153,15 +178,46 @@ class Client:
         extra_data = f"address={address}&startblock={from_block}&endblock={to_block}&sort=asc"
         res = self.get("account", "txlist", extra_data)
 
+        def is_error(is_error):
+            if is_error == '0':
+                return False
+            else:
+                return True
+
         def add_to_results(tx):
             if to_address == "" or tx['to'] == to_address:
                 if fn_signature == "":
-                    results.append(EtherscanTransaction(tx))
+                    results.append(EtherscanTransaction(
+                        tx['hash'],
+                        int(tx['blockNumber']),
+                        int(tx['nonce']),
+                        tx['from'],
+                        tx['to'],
+                        int(tx['value']),
+                        int(tx['gasPrice']),
+                        tx['input'],
+                        int(tx['transactionIndex']),
+                        is_error(tx['isError']),
+                        int(tx['timeStamp']),
+                        int(tx['gasUsed'])
+                    ))
                 else:
                     if len(tx['input']) > 10:
                         if tx['input'][:10] == fn_signature:
-                            results.append(EtherscanTransaction(tx))
-
+                            results.append(EtherscanTransaction(
+                                tx['hash'],
+                                int(tx['blockNumber']),
+                                int(tx['nonce']),
+                                tx['from'],
+                                tx['to'],
+                                int(tx['value']),
+                                int(tx['gasPrice']),
+                                tx['input'],
+                                int(tx['transactionIndex']),
+                                is_error(tx['isError']),
+                                int(tx['timeStamp']),
+                                int(tx['gasUsed'])
+                            ))
         for tx in res:
             if status == 2:
                 add_to_results(tx)
@@ -199,7 +255,7 @@ class Client:
 
         for event in res:
             if enriched_data:
-                transaction = self.get_tx_by_hash(event['transactionHash'])
+                transaction = self.get_raw_tx_by_hash(event['transactionHash'])
                 events.append(EnrichedEvent(event, transaction))
             else:
                 events.append(EtherscanEvent(event))
