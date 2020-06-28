@@ -27,6 +27,17 @@ class EnrichedEvent(EtherscanEvent):
         self.position_in_block = int(transaction['transactionIndex'], 16)
         self.value = int(transaction['value'], 16)
 
+class SimpleEtherscanTransaction:
+    def __init__(self, tx):
+        self.txhash = tx['hash']
+        self.block_height = int(tx['blockNumber'], 16)
+        self.nonce = int(tx['nonce'], 16)
+        self.from_address = tx['from']
+        self.to_address = tx['to']
+        self.value = int(tx['value'], 16)
+        self.gas_price = int(tx['gasPrice'], 16)
+        self.tx_input = tx['input']
+
 class EtherscanTransaction:
     def __init__(self, txhash, block_height, nonce, from_address, to_address, value, gas_price, tx_input, position_in_block, is_error, timestamp, gas_used):
         self.txhash = txhash
@@ -88,7 +99,12 @@ class Client:
         block_number = int(res[0]['blockNumber'])
         return block_number
 
-    def get_tx_by_hash(self, txhash):
+    def get_simple_tx_by_hash(self, txhash):
+        extra_data = f"txhash={txhash}&"
+        res = self.get("proxy", "eth_getTransactionByHash", extra_data)
+        return SimpleEtherscanTransaction(res)
+
+    def get_full_tx_by_hash(self, txhash):
         extra_data = f"txhash={txhash}&"
         res = self.get("proxy", "eth_getTransactionByHash", extra_data)
         

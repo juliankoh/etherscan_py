@@ -60,4 +60,8 @@ def test_get_latest_block_height():
 
 def test_get_tx_by_hash():
     txhash = '0xf217ba9ff27b611fca8ded2ad3bbd581a604bcfe38bbe38c0426bcbdfcfc8aac'
-    client.get_tx_by_hash(txhash)
+    client.get_full_tx_by_hash(txhash)
+
+def test_get_simple_tx_by_hash():
+    txhash = '0xf217ba9ff27b611fca8ded2ad3bbd581a604bcfe38bbe38c0426bcbdfcfc8aac'
+    client.get_simple_tx_by_hash(txhash)
