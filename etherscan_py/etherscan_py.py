@@ -81,7 +81,7 @@ class Client:
                 if res['status'] == '1':
                     return res['result']
                 else:
-                    raise Exception("Invalid Etherscan request")
+                    return res['result']
         else:
             raise Exception("Invalid HTTP request")
 
