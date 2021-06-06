@@ -35,7 +35,7 @@ toolz==0.10.0
 tqdm==4.46.1
 traitlets==4.3.3
 twine==3.1.1
-urllib3==1.25.9
+urllib3==1.26.5
 wcwidth==0.2.4
 webencodings==0.5.1
 zipp==3.1.0
